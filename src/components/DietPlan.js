@@ -8,8 +8,10 @@ import {
   Droplets, 
   Heart,
   Download,
-  Printer
+  Printer,
+  Mail
 } from 'lucide-react';
+import { sendDietPlanEmail } from '../services/emailService';
 
 const DietPlan = ({ dietPlan }) => {
   const { patientName, diagnosis, weight, age, gender, comorbidities, medications, plan, _aiGenerated, _source, _generatedAt } = dietPlan;
@@ -28,6 +30,26 @@ const DietPlan = ({ dietPlan }) => {
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
+  };
+
+  const handleEmail = async () => {
+    try {
+      const email = prompt('Please enter the patient\'s email address:');
+      if (!email) return;
+
+      const contentElement = document.getElementById('diet-plan-content');
+      const content = contentElement.cloneNode(true); // Clone to avoid style issues
+      const response = await sendDietPlanEmail(email, content, patientName);
+      if (response.ok) {
+        alert('Diet plan sent successfully!');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send email');
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      alert(`Failed to send email: ${error.message}`);
+    }
   };
 
   return (
@@ -57,6 +79,10 @@ const DietPlan = ({ dietPlan }) => {
           <button onClick={handleDownload} className="btn btn-outline">
             <Download className="btn-icon" />
             Download
+          </button>
+          <button onClick={handleEmail} className="btn btn-outline">
+            <Mail className="btn-icon" />
+            Email PDF
           </button>
         </div>
       </div>
@@ -115,7 +141,7 @@ const DietPlan = ({ dietPlan }) => {
                   {mealData.items.map((item, index) => (
                     <div key={index} className="meal-item">
                       <span className="item-bullet">•</span>
-                      <span>{item}</span>
+                      <span contentEditable>{item}</span>
                     </div>
                   ))}
                 </div>
